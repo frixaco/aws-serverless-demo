@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   demo-1
@@ -9,11 +9,31 @@ Description: >
 Globals:
   Function:
     Timeout: 3
-    MemorySize: 128
+    MemorySize: 256
     Layers:
-      - !Ref 
+      - !Ref SharedLayer
 
 Resources:
+  FfmpegLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ffmpeg-layer
+      Description: Layer with ffmpeg and ffprobe binaries
+      ContentUri: "s3://frixaco-lambda-layers/ffmpeg-layer.zip"
+      CompatibleRuntimes:
+        - python3.9
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: shared-layer
+      Description: Layer with dependencies and utilies
+      ContentUri: shared/
+      CompatibleRuntimes:
+        - python3.9
+    Metadata:
+      # BuildMethod: python3.9
+      BuildMethod: makefile
+
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -35,6 +55,8 @@ Resources:
       CodeUri: goodbye_world/
       Handler: app.lambda_handler
       Runtime: python3.9
+      Layers:
+        - !Ref FfmpegLayer
       Architectures:
         - x86_64
       Events:
@@ -54,14 +76,15 @@ Outputs:
   HelloWorldFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
+  # HelloWorldFunctionIamRole:
+  #   Description: "Implicit IAM Role created for Hello World function"
+  #   Value: !GetAtt HelloWorldFunctionRole.Arn
   GoodbyeWorldApi:
     Description: "API Gateway endpoint URL for Prod stage for Goodbye World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/goodbye/"
   GoodbyeWorldFunction:
     Description: "Goodbye World Lambda Function ARN"
     Value: !GetAtt GoodbyeWorldFunction.Arn
-  GoodbyeWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt GoodbyeWorldFunctionRole.Arn   Value: !GetAtt GoodbyeWorldFunctionRole.Arn
+  # GoodbyeWorldFunctionIamRole:
+  #   Description: "Implicit IAM Role created for Hello World function"
+  #   Value: !GetAtt GoodbyeWorldFunctionRole.Arn
