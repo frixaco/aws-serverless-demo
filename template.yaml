@@ -30,9 +30,9 @@ Resources:
       ContentUri: shared/
       CompatibleRuntimes:
         - python3.9
+      RetentionPolicy: Delete
     Metadata:
-      # BuildMethod: python3.9
-      BuildMethod: makefile
+      BuildMethod: python3.9
 
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
