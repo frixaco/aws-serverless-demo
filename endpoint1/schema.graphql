@@ -1,0 +1,12 @@
+type Query {
+  endpoint1(data: Endpoint1Input!): Endpoint1Response!
+}
+
+input Endpoint1Input {
+  message: String!
+}
+
+type Endpoint1Response {
+  message: String!
+  success: Boolean!
+}

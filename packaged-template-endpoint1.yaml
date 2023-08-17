@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  Role:
+    Type: String
+    Description: The IAM Role for Lambda execution
+  SharedLayerArn:
+    Type: String
+    Description: The ARN of the shared layer
+  DemoApiId:
+    Type: String
+    Description: The ID of the GraphQL API
+Resources:
+  Endpoint1DataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId:
+        Ref: DemoApiId
+      Name: Endpoint1DataSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn:
+          Fn::GetAtt:
+          - Endpoint1Function
+          - Arn
+      ServiceRoleArn:
+        Ref: Role
+    Metadata:
+      SamResourceId: Endpoint1DataSource
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName:
+        Fn::GetAtt:
+        - Endpoint1Function
+        - Arn
+      Principal: appsync.amazonaws.com
+    Metadata:
+      SamResourceId: LambdaInvokePermission
+  Endpoint1Resolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Ref: DemoApiId
+      TypeName: Query
+      FieldName: endpoint1
+      DataSourceName:
+        Fn::GetAtt:
+        - Endpoint1DataSource
+        - Name
+      Code: "import { util } from '@aws-appsync/utils';\n\nexport function request(ctx)\
+        \ {\n  const {source, args} = ctx;\n  if (!args.data) {\n    util.error(`Missing\
+        \ required field data`, 'BadRequestException');\n  }\n  return {\n    operation:\
+        \ 'Invoke',\n    payload: { data: args.data },\n  };\n}\n\nexport function\
+        \ response(ctx) {\n  const { error, result } = ctx;\n  if (error) {\n    util.appendError(error.message,\
+        \ error.type, result);\n  }\n  return result;\n}\n"
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+    Metadata:
+      SamResourceId: Endpoint1Resolver
+  Endpoint1Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/a4e05758c44d419f4839245502c40a9c
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+      - Ref: SharedLayerArn
+    Metadata:
+      SamResourceId: Endpoint1Function

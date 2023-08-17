@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  DemoApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: DemoApi
+      AuthenticationType: API_KEY
+    Metadata:
+      SamResourceId: DemoApi
+  DemoApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - DemoApi
+        - ApiId
+      Description: API Key for the Demo API
+    Metadata:
+      SamResourceId: DemoApiKey
+  DemoApiSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - DemoApi
+        - ApiId
+      DefinitionS3Location: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/b9820d9b306bdcef5ddb2e97421714b4
+    Metadata:
+      SamResourceId: DemoApiSchema
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - appsync.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: InvokeLambdaFunction
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:invokeFunction
+            Resource: '*'
+    Metadata:
+      SamResourceId: LambdaExecutionRole
+  FfmpegLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ffmpeg-layer
+      Description: Layer with ffmpeg and ffprobe binaries
+      ContentUri: s3://frixaco-lambda-layers/ffmpeg-layer.zip
+      CompatibleRuntimes:
+      - python3.11
+    Metadata:
+      SamResourceId: FfmpegLayer
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: shared-layer
+      Description: Layer with dependencies and utilies
+      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/8a7b8b03504f94b152f9f9eb3cc2d882
+      CompatibleRuntimes:
+      - python3.11
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.11
+      SamResourceId: SharedLayer
+  Endpoint1Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/9ffef41948d0383e21b4ecd1481a22d8.template
+      Parameters:
+        Role:
+          Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        DemoApiId:
+          Fn::GetAtt:
+          - DemoApi
+          - ApiId
+    Metadata:
+      SamResourceId: Endpoint1Stack
+  Endpoint2Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/01752101a45053bcc7b59e1a53fdf34f.template
+      Parameters:
+        Role:
+          Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        FfmpegLayerArn:
+          Ref: FfmpegLayer
+        DemoApiId:
+          Fn::GetAtt:
+          - DemoApi
+          - ApiId
+    Metadata:
+      SamResourceId: Endpoint2Stack
+  Endpoint3Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/14dff0fae9792dda0605349327f99f8d.template
+      Parameters:
+        Role:
+          Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        DemoApiId:
+          Fn::GetAtt:
+          - DemoApi
+          - ApiId
+    Metadata:
+      SamResourceId: Endpoint3Stack
+Outputs:
+  DemoApiUrl:
+    Description: URL for the Demo GraphQL API
+    Value:
+      Fn::GetAtt:
+      - DemoApi
+      - GraphQLUrl

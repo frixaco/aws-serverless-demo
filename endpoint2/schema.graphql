@@ -1,0 +1,12 @@
+type Mutation {
+  endpoint2(data: Endpoint2Input!): Endpoint2Response!
+}
+
+input Endpoint2Input {
+  message: String!
+}
+
+type Endpoint2Response {
+  message: String!
+  success: Boolean!
+}

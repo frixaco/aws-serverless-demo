@@ -1,0 +1,40 @@
+type Query {
+  endpoint1(data: Endpoint1Input!): Endpoint1Response!
+}
+
+input Endpoint1Input {
+  message: String!
+}
+
+type Endpoint1Response {
+  message: String!
+  success: Boolean!
+}
+
+type Mutation {
+  endpoint2(data: Endpoint2Input!): Endpoint2Response!
+  endpoint3(data: Endpoint3Input!): Endpoint3Response!
+}
+
+input Endpoint2Input {
+  message: String!
+}
+
+type Endpoint2Response {
+  message: String!
+  success: Boolean!
+}
+
+input Endpoint3Input {
+  message: String!
+}
+
+type Endpoint3Response {
+  message: String!
+  success: Boolean!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}

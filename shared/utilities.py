@@ -1,26 +1,50 @@
 import os
-import json
 import subprocess
 
-from database import db_conn
+from database import connect_to_db
 
-def printer(text):
-    print("Your text", text)
 
-def check_ffmpeg_binary():
+def check_ffmpeg_opt():
     ffmpeg_binary = "/opt/python/ffmpeg"
 
     if not os.path.exists(ffmpeg_binary):
         print("ffmpeg binary not found")
         return False
-    
+
     print("ffmpeg binary found")
+
+    result = subprocess.run(
+        [ffmpeg_binary, "--version"],
+        capture_output=True,
+        text=True,
+    )
+
+    print(result.stdout)
+    print(result.stderr)
+
     return True
-    
 
-def printer(text):
-    ffmpeg_path = "ffmpeg"
-    cmd = f"{ffmpeg_path} --version"
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    print(text, result, db_conn())
+def check_ffmpeg():
+    ffmpeg_binary = "ffmpeg"
+
+    if not os.path.exists(ffmpeg_binary):
+        print("ffmpeg binary not found")
+        return False
+
+    print("ffmpeg binary found")
+
+    result = subprocess.run(
+        [ffmpeg_binary, "--version"],
+        capture_output=True,
+        text=True,
+    )
+
+    print(result.stdout)
+    print(result.stderr)
+
+    return True
+
+
+def init_db():
+    return connect_to_db()

@@ -1,3 +1,7 @@
 boto3
 requests
-pydub
+uuid6
+cfn-lint
+ruff
+black
+graphql-core
