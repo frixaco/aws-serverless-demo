@@ -1,3 +1,10 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Mutation {}
+
 type Query {
   endpoint1(data: Endpoint1Input!): Endpoint1Response!
 }

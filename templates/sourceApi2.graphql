@@ -1,15 +1,9 @@
-type Query {
-  endpoint1(data: Endpoint1Input!): Endpoint1Response!
+schema {
+  query: Query
+  mutation: Mutation
 }
 
-input Endpoint1Input {
-  message: String!
-}
-
-type Endpoint1Response {
-  message: String!
-  success: Boolean!
-}
+type Query {}
 
 type Mutation {
   endpoint2(data: Endpoint2Input!): Endpoint2Response!
@@ -32,9 +26,4 @@ input Endpoint3Input {
 type Endpoint3Response {
   message: String!
   success: Boolean!
-}
-
-schema {
-  query: Query
-  mutation: Mutation
 }
