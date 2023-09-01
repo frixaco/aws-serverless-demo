@@ -1,0 +1,148 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  FfmpegLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ffmpeg-layer
+      Description: Layer with ffmpeg and ffprobe binaries
+      ContentUri: s3://frixaco-lambda-layers/ffmpeg-layer.zip
+      CompatibleRuntimes:
+      - python3.11
+    Metadata:
+      SamResourceId: FfmpegLayer
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: shared-layer
+      Description: Layer with dependencies and utilies
+      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/976e80a59b834906f39ec0d307917a92
+      CompatibleRuntimes:
+      - python3.11
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.11
+      SamResourceId: SharedLayer
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - appsync.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: InvokeLambdaFunction
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:invokeFunction
+            Resource: '*'
+    Metadata:
+      SamResourceId: LambdaExecutionRole
+  MergedApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - appsync.amazonaws.com
+          Action:
+          - sts:AssumeRole
+    Metadata:
+      SamResourceId: MergedApiRole
+  MergedApiRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: MergedApiRolePolicy
+      Roles:
+      - Ref: MergedApiRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - appsync:*
+          Resource: '*'
+    Metadata:
+      SamResourceId: MergedApiRolePolicy
+  SourceApi1Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/0563254122db27b96b142169e41be345.template
+      Parameters:
+        LambdaExecutionRole:
+          Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        MergedApiArn:
+          Fn::GetAtt:
+          - MergedApi
+          - Arn
+    Metadata:
+      SamResourceId: SourceApi1Stack
+  SourceApi2Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/e40bda725d4ac96e874901db5a090e27.template
+      Parameters:
+        LambdaExecutionRole:
+          Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        FfmpegLayerArn:
+          Ref: FfmpegLayer
+        MergedApiArn:
+          Fn::GetAtt:
+          - MergedApi
+          - Arn
+    Metadata:
+      SamResourceId: SourceApi2Stack
+  MergedApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: demo-merged-api-1
+      ApiType: MERGED
+      AuthenticationType: API_KEY
+      MergedApiExecutionRoleArn:
+        Fn::GetAtt:
+        - MergedApiRole
+        - Arn
+    Metadata:
+      SamResourceId: MergedApi
+  MergedApi1ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - MergedApi
+        - ApiId
+      Description: API Key for the Demo API
+    Metadata:
+      SamResourceId: MergedApi1ApiKey
+Outputs:
+  MergedApi:
+    Description: AppSync Merged API
+    Value:
+      Fn::GetAtt:
+      - MergedApi
+      - GraphQLUrl
+  MergedApi1ApiKey:
+    Description: API Key for authentication
+    Value:
+      Fn::GetAtt:
+      - MergedApi1ApiKey
+      - ApiKey

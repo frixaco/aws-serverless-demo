@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  LambdaExecutionRole:
+    Type: String
+    Description: The IAM Role for Lambda execution
+  SharedLayerArn:
+    Type: String
+    Description: The ARN of the shared layer
+  FfmpegLayerArn:
+    Type: String
+    Description: The ARN of the ffmpeg layer
+  MergedApiArn:
+    Type: String
+    Description: The ID of the merged GraphQL API
+  # SourceApi2Arn:
+  #   Type: String
+  #   Description: The ARN of the source GraphQL API
+  # SourceApi2ApiId:
+  #   Type: String
+  #   Description: The ID of the GraphQL API
+
+Resources:
+  SourceApi2ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId: !GetAtt SourceApi2.ApiId
+      Description: "API Key for the Demo API"
+
+  SourceApi2Schema:
+    Type: "AWS::AppSync::GraphQLSchema"
+    Properties:
+      ApiId: !GetAtt SourceApi2.ApiId
+      DefinitionS3Location: ./sourceApi2.graphql
+
+  Endpoint2Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../endpoint2/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref FfmpegLayerArn
+        - !Ref SharedLayerArn
+
+  Endpoint2DataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt SourceApi2.ApiId
+      Name: Endpoint2DataSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt Endpoint2Function.Arn
+      ServiceRoleArn: !Ref LambdaExecutionRole
+
+  Lambda2InvokePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:invokeFunction"
+      FunctionName: !GetAtt Endpoint2Function.Arn
+      Principal: "appsync.amazonaws.com"
+
+  Endpoint2Resolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt SourceApi2.ApiId
+      TypeName: "Mutation"
+      FieldName: "endpoint2"
+      DataSourceName: !GetAtt Endpoint2DataSource.Name
+      Code: |
+        import { util } from '@aws-appsync/utils';
+
+        export function request(ctx) {
+          const {source, args} = ctx;
+          if (!args.data) {
+            util.error(`Missing required field data`, 'BadRequestException');
+          }
+          return {
+            operation: 'Invoke',
+            payload: { data: args.data },
+          };
+        }
+
+        export function response(ctx) {
+          const { error, result } = ctx;
+          if (error) {
+            util.appendError(error.message, error.type, result);
+          }
+          return result;
+        }
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+
+  Lambda3InvokePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:invokeFunction"
+      FunctionName: !GetAtt Endpoint3Function.Arn
+      Principal: "appsync.amazonaws.com"
+
+  Endpoint3DataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt SourceApi2.ApiId
+      Name: Endpoint3DataSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt Endpoint3Function.Arn
+      ServiceRoleArn: !Ref LambdaExecutionRole
+
+  Endpoint3Resolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt SourceApi2.ApiId
+      TypeName: "Mutation"
+      FieldName: "endpoint3"
+      DataSourceName: !GetAtt Endpoint3DataSource.Name
+      Code: |
+        import { util } from '@aws-appsync/utils';
+
+        export function request(ctx) {
+          const {source, args} = ctx;
+          if (!args.data) {
+            util.error(`Missing required field data`, 'BadRequestException');
+          }
+          return {
+            operation: 'Invoke',
+            payload: { data: args.data },
+          };
+        }
+
+        export function response(ctx) {
+          const { error, result } = ctx;
+          if (error) {
+            util.appendError(error.message, error.type, result);
+          }
+          return result;
+        }
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+
+  Endpoint3Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../endpoint3/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+        - !Ref SharedLayerArn
+
+  SourceApi2:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: demo-source-api-2
+      ApiType: GRAPHQL
+      AuthenticationType: API_KEY
+
+  SourceApi2Association:
+    Type: AWS::AppSync::SourceApiAssociation
+    DependsOn:
+      - SourceApi2Schema
+    Properties:
+      MergedApiIdentifier: !Ref MergedApiArn
+      # SourceApiIdentifier: !Ref SourceApi1Arn
+      # SourceApiIdentifier: !ImportValue SourceApi1Arn
+      # SourceApiIdentifier: !Ref SourceApi1ArnExported
+      # MergedApiIdentifier: !GetAtt MergedApi.Arn
+      SourceApiIdentifier: !GetAtt SourceApi2.Arn
+      SourceApiAssociationConfig:
+        MergeType: "AUTO_MERGE"
+
+Outputs:
+  SourceApi2Arn:
+    Value: !GetAtt SourceApi2.Arn
+    Export:
+      Name: "SourceApi2ArnExported"

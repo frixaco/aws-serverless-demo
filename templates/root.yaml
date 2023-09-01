@@ -23,34 +23,6 @@ Resources:
     Metadata:
       BuildMethod: python3.11
 
-  Endpoint1Function:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../endpoint1/
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref SharedLayer
-
-  SourceApi1:
-    Type: AWS::AppSync::GraphQLApi
-    Properties:
-      Name: demo-source-api-1
-      ApiType: GRAPHQL
-      AuthenticationType: API_KEY
-
-  SourceApi1ApiKey:
-    Type: AWS::AppSync::ApiKey
-    Properties:
-      ApiId: !GetAtt SourceApi1.ApiId
-      Description: "API Key for the Demo API"
-
-  SourceApi1Schema:
-    Type: "AWS::AppSync::GraphQLSchema"
-    Properties:
-      ApiId: !GetAtt SourceApi1.ApiId
-      DefinitionS3Location: ./sourceApi1.graphql
-
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -72,55 +44,6 @@ Resources:
                 Action:
                   - "lambda:invokeFunction"
                 Resource: "*"
-
-  Endpoint1DataSource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      ApiId: !GetAtt SourceApi1.ApiId
-      Name: Endpoint1DataSource
-      Type: AWS_LAMBDA
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt Endpoint1Function.Arn
-      ServiceRoleArn: !GetAtt LambdaExecutionRole.Arn
-
-  Lambda1InvokePermission:
-    Type: "AWS::Lambda::Permission"
-    Properties:
-      Action: "lambda:invokeFunction"
-      FunctionName: !GetAtt Endpoint1Function.Arn
-      Principal: "appsync.amazonaws.com"
-
-  Endpoint1Resolver:
-    Type: AWS::AppSync::Resolver
-    Properties:
-      ApiId: !GetAtt SourceApi1.ApiId
-      TypeName: "Query"
-      FieldName: "endpoint1"
-      DataSourceName: !GetAtt Endpoint1DataSource.Name
-      Code: |
-        import { util } from '@aws-appsync/utils';
-
-        export function request(ctx) {
-          const {source, args} = ctx;
-          if (!args.data) {
-            util.error(`Missing required field data`, 'BadRequestException');
-          }
-          return {
-            operation: 'Invoke',
-            payload: { data: args.data },
-          };
-        }
-
-        export function response(ctx) {
-          const { error, result } = ctx;
-          if (error) {
-            util.appendError(error.message, error.type, result);
-          }
-          return result;
-        }
-      Runtime:
-        Name: APPSYNC_JS
-        RuntimeVersion: 1.0.0
 
   MergedApiRole:
     Type: AWS::IAM::Role
@@ -149,6 +72,29 @@ Resources:
               - "appsync:*"
             Resource: "*"
 
+  SourceApi1Stack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: ./child1.yaml
+      Parameters:
+        LambdaExecutionRole: !GetAtt LambdaExecutionRole.Arn
+        SharedLayerArn: !Ref SharedLayer
+        # SourceApi1ApiId: !GetAtt SourceApi1.ApiId
+        MergedApiArn: !GetAtt MergedApi.Arn
+        # SourceApi1Arn: !GetAtt SourceApi1.Arn
+
+  SourceApi2Stack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: ./child2.yaml
+      Parameters:
+        LambdaExecutionRole: !GetAtt LambdaExecutionRole.Arn
+        SharedLayerArn: !Ref SharedLayer
+        FfmpegLayerArn: !Ref FfmpegLayer
+        # SourceApi1ApiId: !GetAtt SourceApi1.ApiId
+        MergedApiArn: !GetAtt MergedApi.Arn
+        # SourceApi1Arn: !GetAtt SourceApi1.Arn
+
   MergedApi:
     Type: AWS::AppSync::GraphQLApi
     Properties:
@@ -162,158 +108,6 @@ Resources:
     Properties:
       ApiId: !GetAtt MergedApi.ApiId
       Description: "API Key for the Demo API"
-
-  SourceApi1Association:
-    Type: AWS::AppSync::SourceApiAssociation
-    Properties:
-      MergedApiIdentifier: !GetAtt MergedApi.Arn
-      SourceApiIdentifier: !GetAtt SourceApi1.Arn
-      SourceApiAssociationConfig:
-        MergeType: "AUTO_MERGE"
-
-  Endpoint2Function:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../endpoint2/
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref FfmpegLayer
-        - !Ref SharedLayer
-
-  Endpoint3Function:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../endpoint3/
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Layers:
-        - !Ref SharedLayer
-
-  SourceApi2:
-    Type: AWS::AppSync::GraphQLApi
-    Properties:
-      Name: demo-source-api-2
-      ApiType: GRAPHQL
-      AuthenticationType: API_KEY
-
-  SourceApi2ApiKey:
-    Type: AWS::AppSync::ApiKey
-    Properties:
-      ApiId: !GetAtt SourceApi2.ApiId
-      Description: "API Key for the Demo API"
-
-  SourceApi2Schema:
-    Type: "AWS::AppSync::GraphQLSchema"
-    Properties:
-      ApiId: !GetAtt SourceApi2.ApiId
-      DefinitionS3Location: ./sourceApi2.graphql
-
-  Endpoint2DataSource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      ApiId: !GetAtt SourceApi2.ApiId
-      Name: Endpoint2DataSource
-      Type: AWS_LAMBDA
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt Endpoint2Function.Arn
-      ServiceRoleArn: !GetAtt LambdaExecutionRole.Arn
-
-  Lambda2InvokePermission:
-    Type: "AWS::Lambda::Permission"
-    Properties:
-      Action: "lambda:invokeFunction"
-      FunctionName: !GetAtt Endpoint2Function.Arn
-      Principal: "appsync.amazonaws.com"
-
-  Endpoint2Resolver:
-    Type: AWS::AppSync::Resolver
-    Properties:
-      ApiId: !GetAtt SourceApi2.ApiId
-      TypeName: "Mutation"
-      FieldName: "endpoint2"
-      DataSourceName: !GetAtt Endpoint2DataSource.Name
-      Code: |
-        import { util } from '@aws-appsync/utils';
-
-        export function request(ctx) {
-          const {source, args} = ctx;
-          if (!args.data) {
-            util.error(`Missing required field data`, 'BadRequestException');
-          }
-          return {
-            operation: 'Invoke',
-            payload: { data: args.data },
-          };
-        }
-
-        export function response(ctx) {
-          const { error, result } = ctx;
-          if (error) {
-            util.appendError(error.message, error.type, result);
-          }
-          return result;
-        }
-      Runtime:
-        Name: APPSYNC_JS
-        RuntimeVersion: 1.0.0
-
-  Lambda3InvokePermission:
-    Type: "AWS::Lambda::Permission"
-    Properties:
-      Action: "lambda:invokeFunction"
-      FunctionName: !GetAtt Endpoint3Function.Arn
-      Principal: "appsync.amazonaws.com"
-
-  SourceApi2Association:
-    Type: AWS::AppSync::SourceApiAssociation
-    Properties:
-      MergedApiIdentifier: !GetAtt MergedApi.Arn
-      SourceApiIdentifier: !GetAtt SourceApi2.Arn
-      SourceApiAssociationConfig:
-        MergeType: "AUTO_MERGE"
-
-  Endpoint3DataSource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      ApiId: !GetAtt SourceApi2.ApiId
-      Name: Endpoint3DataSource
-      Type: AWS_LAMBDA
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt Endpoint3Function.Arn
-      ServiceRoleArn: !GetAtt LambdaExecutionRole.Arn
-
-  Endpoint3Resolver:
-    Type: AWS::AppSync::Resolver
-    Properties:
-      ApiId: !GetAtt SourceApi2.ApiId
-      TypeName: "Mutation"
-      FieldName: "endpoint3"
-      DataSourceName: !GetAtt Endpoint3DataSource.Name
-      Code: |
-        import { util } from '@aws-appsync/utils';
-
-        export function request(ctx) {
-          const {source, args} = ctx;
-          if (!args.data) {
-            util.error(`Missing required field data`, 'BadRequestException');
-          }
-          return {
-            operation: 'Invoke',
-            payload: { data: args.data },
-          };
-        }
-
-        export function response(ctx) {
-          const { error, result } = ctx;
-          if (error) {
-            util.appendError(error.message, error.type, result);
-          }
-          return result;
-        }
-      Runtime:
-        Name: APPSYNC_JS
-        RuntimeVersion: 1.0.0
 
 Outputs:
   MergedApi:

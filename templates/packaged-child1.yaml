@@ -1,0 +1,127 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  LambdaExecutionRole:
+    Type: String
+    Description: The IAM Role for Lambda execution
+  SharedLayerArn:
+    Type: String
+    Description: The ARN of the shared layer
+  MergedApiArn:
+    Type: String
+    Description: The ARN of the merged GraphQL API
+Resources:
+  SourceApi1ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi1
+        - ApiId
+      Description: API Key for the Demo API
+    Metadata:
+      SamResourceId: SourceApi1ApiKey
+  SourceApi1Schema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi1
+        - ApiId
+      DefinitionS3Location: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/071b93ac82c018e10f8121066081ab1f
+    Metadata:
+      SamResourceId: SourceApi1Schema
+  Endpoint1Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/3d638b39c376b7a53f05b8f2fbf62ec5
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Layers:
+      - Ref: SharedLayerArn
+    Metadata:
+      SamResourceId: Endpoint1Function
+  Endpoint1DataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi1
+        - ApiId
+      Name: Endpoint1DataSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn:
+          Fn::GetAtt:
+          - Endpoint1Function
+          - Arn
+      ServiceRoleArn:
+        Ref: LambdaExecutionRole
+    Metadata:
+      SamResourceId: Endpoint1DataSource
+  Lambda1InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName:
+        Fn::GetAtt:
+        - Endpoint1Function
+        - Arn
+      Principal: appsync.amazonaws.com
+    Metadata:
+      SamResourceId: Lambda1InvokePermission
+  Endpoint1Resolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi1
+        - ApiId
+      TypeName: Query
+      FieldName: endpoint1
+      DataSourceName:
+        Fn::GetAtt:
+        - Endpoint1DataSource
+        - Name
+      Code: "import { util } from '@aws-appsync/utils';\n\nexport function request(ctx)\
+        \ {\n  const {source, args} = ctx;\n  if (!args.data) {\n    util.error(`Missing\
+        \ required field data`, 'BadRequestException');\n  }\n  return {\n    operation:\
+        \ 'Invoke',\n    payload: { data: args.data },\n  };\n}\n\nexport function\
+        \ response(ctx) {\n  const { error, result } = ctx;\n  if (error) {\n    util.appendError(error.message,\
+        \ error.type, result);\n  }\n  return result;\n}\n"
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+    Metadata:
+      SamResourceId: Endpoint1Resolver
+  SourceApi1:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: demo-source-api-1
+      ApiType: GRAPHQL
+      AuthenticationType: API_KEY
+    Metadata:
+      SamResourceId: SourceApi1
+  SourceApi1Association:
+    Type: AWS::AppSync::SourceApiAssociation
+    DependsOn:
+    - SourceApi1Schema
+    Properties:
+      MergedApiIdentifier:
+        Ref: MergedApiArn
+      SourceApiIdentifier:
+        Fn::GetAtt:
+        - SourceApi1
+        - Arn
+      SourceApiAssociationConfig:
+        MergeType: AUTO_MERGE
+    Metadata:
+      SamResourceId: SourceApi1Association
+Outputs:
+  SourceApi1Arn:
+    Value:
+      Fn::GetAtt:
+      - SourceApi1
+      - Arn
+    Export:
+      Name: SourceApi1ArnExported
