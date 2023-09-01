@@ -1,0 +1,234 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  FfmpegLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ffmpeg-layer
+      Description: Layer with ffmpeg and ffprobe binaries
+      ContentUri: s3://frixaco-lambda-layers/ffmpeg-layer.zip
+      CompatibleRuntimes:
+      - python3.11
+    Metadata:
+      SamResourceId: FfmpegLayer
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: shared-layer
+      Description: Layer with dependencies and utilies
+      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/87a4e5f43d7a732fc61883a768816ea0
+      CompatibleRuntimes:
+      - python3.11
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.11
+      SamResourceId: SharedLayer
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - appsync.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: InvokeLambdaFunction
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:invokeFunction
+            Resource: '*'
+    Metadata:
+      SamResourceId: LambdaExecutionRole
+  MergedApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - appsync.amazonaws.com
+          Action:
+          - sts:AssumeRole
+    Metadata:
+      SamResourceId: MergedApiRole
+  MergedApiRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: MergedApiRolePolicy
+      Roles:
+      - Ref: MergedApiRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - appsync:*
+          Resource: '*'
+    Metadata:
+      SamResourceId: MergedApiRolePolicy
+  MergedApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: demo-merged-api-1
+      ApiType: MERGED
+      AuthenticationType: API_KEY
+      MergedApiExecutionRoleArn:
+        Fn::GetAtt:
+        - MergedApiRole
+        - Arn
+    Metadata:
+      SamResourceId: MergedApi
+  MergedApi1ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - MergedApi
+        - ApiId
+      Description: API Key for the Demo API
+    Metadata:
+      SamResourceId: MergedApi1ApiKey
+  SourceApi1:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: demo-source-api-1
+      ApiType: GRAPHQL
+      AuthenticationType: API_KEY
+    Metadata:
+      SamResourceId: SourceApi1
+  SourceApi1Association:
+    Type: AWS::AppSync::SourceApiAssociation
+    Properties:
+      MergedApiIdentifier:
+        Fn::GetAtt:
+        - MergedApi
+        - Arn
+      SourceApiIdentifier:
+        Fn::GetAtt:
+        - SourceApi1
+        - Arn
+      SourceApiAssociationConfig:
+        MergeType: AUTO_MERGE
+    Metadata:
+      SamResourceId: SourceApi1Association
+  SourceApi1ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi1
+        - ApiId
+      Description: API Key for the Demo API
+    Metadata:
+      SamResourceId: SourceApi1ApiKey
+  SourceApi1Schema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi1
+        - ApiId
+      DefinitionS3Location: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/dbfd86e7944e53664ad2117a75dfc9fa
+    Metadata:
+      SamResourceId: SourceApi1Schema
+  SourceApi1Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/b5b424c38748aa7168b3ce86c155fc6b.template
+      Parameters:
+        LambdaExecutionRole:
+          Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        SourceApi1ApiId:
+          Fn::GetAtt:
+          - SourceApi1
+          - ApiId
+    Metadata:
+      SamResourceId: SourceApi1Stack
+  SourceApi2:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: demo-source-api-2
+      ApiType: GRAPHQL
+      AuthenticationType: API_KEY
+    Metadata:
+      SamResourceId: SourceApi2
+  SourceApi2Association:
+    Type: AWS::AppSync::SourceApiAssociation
+    Properties:
+      MergedApiIdentifier:
+        Fn::GetAtt:
+        - MergedApi
+        - Arn
+      SourceApiIdentifier:
+        Fn::GetAtt:
+        - SourceApi2
+        - Arn
+      SourceApiAssociationConfig:
+        MergeType: AUTO_MERGE
+    Metadata:
+      SamResourceId: SourceApi2Association
+  SourceApi2ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi2
+        - ApiId
+      Description: API Key for the Demo API
+    Metadata:
+      SamResourceId: SourceApi2ApiKey
+  SourceApi2Schema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - SourceApi2
+        - ApiId
+      DefinitionS3Location: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/c1fb761e86ed0828123240bca018da67
+    Metadata:
+      SamResourceId: SourceApi2Schema
+  SourceApi2Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/5e53d0c5cfbb96626d780b56880bea19.template
+      Parameters:
+        LambdaExecutionRole:
+          Fn::GetAtt:
+          - LambdaExecutionRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        FfmpegLayerArn:
+          Ref: FfmpegLayer
+        SourceApi2ApiId:
+          Fn::GetAtt:
+          - SourceApi2
+          - ApiId
+    Metadata:
+      SamResourceId: SourceApi2Stack
+Outputs:
+  MergedApi:
+    Description: AppSync Merged API
+    Value:
+      Fn::GetAtt:
+      - MergedApi
+      - GraphQLUrl
+  MergedApi1ApiKey:
+    Description: API Key for authentication
+    Value:
+      Fn::GetAtt:
+      - MergedApi1ApiKey
+      - ApiKey
