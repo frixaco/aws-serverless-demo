@@ -7,7 +7,7 @@ Resources:
     Properties:
       LayerName: ffmpeg-layer
       Description: Layer with ffmpeg and ffprobe binaries
-      ContentUri: "s3://frixaco-lambda-layers/ffmpeg-layer.zip"
+      ContentUri: "s3://frixaco-lambda-layers/ffmpeg_mediainfo_layer.zip"
       CompatibleRuntimes:
         - python3.11
 
@@ -23,7 +23,12 @@ Resources:
     Metadata:
       BuildMethod: python3.11
 
-  LambdaExecutionRole:
+  NotificationsTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      DisplayName: "test-realtime-notifications"
+
+  DataSourceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -77,23 +82,20 @@ Resources:
     Properties:
       TemplateURL: ./child1.yaml
       Parameters:
-        LambdaExecutionRole: !GetAtt LambdaExecutionRole.Arn
+        DataSourceRole: !GetAtt DataSourceRole.Arn
         SharedLayerArn: !Ref SharedLayer
-        # SourceApi1ApiId: !GetAtt SourceApi1.ApiId
         MergedApiArn: !GetAtt MergedApi.Arn
-        # SourceApi1Arn: !GetAtt SourceApi1.Arn
 
   SourceApi2Stack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: ./child2.yaml
       Parameters:
-        LambdaExecutionRole: !GetAtt LambdaExecutionRole.Arn
+        DataSourceRole: !GetAtt DataSourceRole.Arn
         SharedLayerArn: !Ref SharedLayer
         FfmpegLayerArn: !Ref FfmpegLayer
-        # SourceApi1ApiId: !GetAtt SourceApi1.ApiId
         MergedApiArn: !GetAtt MergedApi.Arn
-        # SourceApi1Arn: !GetAtt SourceApi1.Arn
+        NotificationsTopicArn: !Ref NotificationsTopic
 
   MergedApi:
     Type: AWS::AppSync::GraphQLApi
@@ -103,16 +105,32 @@ Resources:
       AuthenticationType: API_KEY
       MergedApiExecutionRoleArn: !GetAtt MergedApiRole.Arn
 
-  MergedApi1ApiKey:
+  MergedApiKey:
     Type: AWS::AppSync::ApiKey
     Properties:
       ApiId: !GetAtt MergedApi.ApiId
       Description: "API Key for the Demo API"
 
+  SNSNotificationsStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: ./child3.yaml
+      Parameters:
+        DataSourceRole: !GetAtt DataSourceRole.Arn
+        SharedLayerArn: !Ref SharedLayer
+        MergedApiUrl: !GetAtt MergedApi.GraphQLUrl
+        MergedApiKey: !GetAtt MergedApiKey.ApiKey
+        NotificationsTopicArn: !Ref NotificationsTopic
+
 Outputs:
-  MergedApi:
+  MergedApiUrl:
     Description: AppSync Merged API
     Value: !GetAtt MergedApi.GraphQLUrl
-  MergedApi1ApiKey:
+  MergedApiKey:
     Description: API Key for authentication
-    Value: !GetAtt MergedApi1ApiKey.ApiKey
+    Value: !GetAtt MergedApiKey.ApiKey
+  NotificationsTopicArn:
+    Description: ARN of the exported notifications SNS topic
+    Value: !Ref NotificationsTopic
+    Export:
+      Name: NotificationsTopicArn

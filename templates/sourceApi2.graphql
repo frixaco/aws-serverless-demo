@@ -1,13 +1,35 @@
 schema {
   query: Query
   mutation: Mutation
+  subscription: Subscription
 }
 
-type Query {}
+type Query {
+}
+
+type NotificationPayload {
+  receiverId: String!
+  payload: Notification
+}
+
+type Notification {
+  content: String
+}
+
+input NotificationInput {
+  content: String
+}
 
 type Mutation {
   endpoint2(data: Endpoint2Input!): Endpoint2Response!
   endpoint3(data: Endpoint3Input!): Endpoint3Response!
+  endpoint4(receiverId: String!, payload: NotificationInput): NotificationPayload
+}
+
+type Subscription {
+  endpoint4Channel(
+    receiverId: String!
+  ): NotificationPayload @aws_subscribe(mutations: ["endpoint4"])
 }
 
 input Endpoint2Input {

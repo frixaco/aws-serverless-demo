@@ -1,7 +1,34 @@
+import json
 import os
 import subprocess
+from typing import TypedDict
 
+import boto3
 from database import connect_to_db
+
+
+class NotificationPayload(TypedDict):
+    content: str
+
+
+def notify_subscribers(payload: NotificationPayload, topic_arn: str, receiver_id: str):
+    print("============ START NOTIFY SUBSCRIBERS ============")
+    print("sns topic arn: ", topic_arn)
+    print("message: ", {"receiverId": receiver_id, "payload": payload})
+
+    sns = boto3.client("sns")
+    response = sns.publish(
+        TopicArn=topic_arn,
+        Message=json.dumps(
+            {"default": json.dumps({"receiverId": receiver_id, "payload": payload})}
+        ),
+        MessageStructure="json",
+    )
+
+    print("sns response: ", response)
+    print("============ FINISHED NOTIFYING SUBSCRIBERS ============")
+
+    return response
 
 
 def check_ffmpeg_opt():

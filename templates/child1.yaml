@@ -2,34 +2,32 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  LambdaExecutionRole:
+  DataSourceRole:
     Type: String
     Description: The IAM Role for Lambda execution
   SharedLayerArn:
     Type: String
     Description: The ARN of the shared layer
-  # SourceApi1ApiId:
-  #   Type: String
-  #   Description: The ID of the GraphQL API
-  # SourceApi1Arn:
-  #   Type: String
-  #   Description: The ARN of the source GraphQL API
   MergedApiArn:
     Type: String
     Description: The ARN of the merged GraphQL API
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 30
+    Handler: app.lambda_handler
 
 Resources:
   SourceApi1ApiKey:
     Type: AWS::AppSync::ApiKey
     Properties:
-      # ApiId: !Ref SourceApi1ApiId
       ApiId: !GetAtt SourceApi1.ApiId
       Description: "API Key for the Demo API"
 
   SourceApi1Schema:
     Type: "AWS::AppSync::GraphQLSchema"
     Properties:
-      # ApiId: !Ref SourceApi1ApiId
       ApiId: !GetAtt SourceApi1.ApiId
       DefinitionS3Location: ./sourceApi1.graphql
 
@@ -37,21 +35,18 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../endpoint1/
-      Handler: app.lambda_handler
-      Runtime: python3.11
       Layers:
         - !Ref SharedLayerArn
 
   Endpoint1DataSource:
     Type: AWS::AppSync::DataSource
     Properties:
-      # ApiId: !Ref SourceApi1ApiId
       ApiId: !GetAtt SourceApi1.ApiId
       Name: Endpoint1DataSource
       Type: AWS_LAMBDA
       LambdaConfig:
         LambdaFunctionArn: !GetAtt Endpoint1Function.Arn
-      ServiceRoleArn: !Ref LambdaExecutionRole
+      ServiceRoleArn: !Ref DataSourceRole
 
   Lambda1InvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -106,10 +101,6 @@ Resources:
       - SourceApi1Schema
     Properties:
       MergedApiIdentifier: !Ref MergedApiArn
-      # SourceApiIdentifier: !Ref SourceApi1Arn
-      # SourceApiIdentifier: !ImportValue SourceApi1Arn
-      # SourceApiIdentifier: !Ref SourceApi1ArnExported
-      # MergedApiIdentifier: !GetAtt MergedApi.Arn
       SourceApiIdentifier: !GetAtt SourceApi1.Arn
       SourceApiAssociationConfig:
         MergeType: "AUTO_MERGE"

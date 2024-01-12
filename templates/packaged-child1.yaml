@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Parameters:
-  LambdaExecutionRole:
+  DataSourceRole:
     Type: String
     Description: The IAM Role for Lambda execution
   SharedLayerArn:
@@ -56,7 +56,7 @@ Resources:
           - Endpoint1Function
           - Arn
       ServiceRoleArn:
-        Ref: LambdaExecutionRole
+        Ref: DataSourceRole
     Metadata:
       SamResourceId: Endpoint1DataSource
   Lambda1InvokePermission:

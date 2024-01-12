@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.lambda_handler
+      FunctionName: MyLambdaFunction
+      Runtime: python3.11
+      CodeUri: ../another_endpoint1/
+      Environment:
+        Variables:
+          ExportedTopicArn: !ImportValue NotificationsTopicArn

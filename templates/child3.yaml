@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  NotificationsTopicArn:
+    Type: String
+    Description: The ARN of SNS notification topic
+  DataSourceRole:
+    Type: String
+    Description: The IAM Role for Lambda execution
+  SharedLayerArn:
+    Type: String
+    Description: The ARN of the shared layer
+  MergedApiUrl:
+    Type: String
+    Description: API URL
+  MergedApiKey:
+    Type: String
+    Description: API KEY
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 30
+    Handler: app.lambda_handler
+
+Resources:
+  NotificationsFunctionInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:invokeFunction"
+      FunctionName: !GetAtt NotificationsFunction.Arn
+      Principal: "sns.amazonaws.com"
+
+  NotificationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../sns_notification/
+      Layers:
+        - !Ref SharedLayerArn
+      Environment:
+        Variables:
+          GRAPHQL_API_URL: !Ref MergedApiUrl
+          GRAPHQL_API_KEY: !Ref MergedApiKey
+
+  NotificationsSubscription:
+    Type: "AWS::SNS::Subscription"
+    Properties:
+      Protocol: "lambda"
+      TopicArn: !Ref NotificationsTopicArn
+      Endpoint: !GetAtt NotificationsFunction.Arn
+
+  Job1Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../job1/
+      Layers:
+        - !Ref SharedLayerArn
+      Events:
+        ProfileVerificationReminder:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "sns:Publish"
+                # TODO: Use actual ARN
+              Resource: "*"

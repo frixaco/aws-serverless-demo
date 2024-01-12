@@ -6,7 +6,7 @@ Resources:
     Properties:
       LayerName: ffmpeg-layer
       Description: Layer with ffmpeg and ffprobe binaries
-      ContentUri: s3://frixaco-lambda-layers/ffmpeg-layer.zip
+      ContentUri: s3://frixaco-lambda-layers/ffmpeg_mediainfo_layer.zip
       CompatibleRuntimes:
       - python3.11
     Metadata:
@@ -16,14 +16,20 @@ Resources:
     Properties:
       LayerName: shared-layer
       Description: Layer with dependencies and utilies
-      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/976e80a59b834906f39ec0d307917a92
+      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/dc666ec6cd280fc69030cbde91b88802
       CompatibleRuntimes:
       - python3.11
       RetentionPolicy: Delete
     Metadata:
       BuildMethod: python3.11
       SamResourceId: SharedLayer
-  LambdaExecutionRole:
+  NotificationsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: test-realtime-notifications
+    Metadata:
+      SamResourceId: NotificationsTopic
+  DataSourceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -45,7 +51,7 @@ Resources:
             - lambda:invokeFunction
             Resource: '*'
     Metadata:
-      SamResourceId: LambdaExecutionRole
+      SamResourceId: DataSourceRole
   MergedApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -78,11 +84,11 @@ Resources:
   SourceApi1Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/0563254122db27b96b142169e41be345.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/d773275149507c9d718854d654736607.template
       Parameters:
-        LambdaExecutionRole:
+        DataSourceRole:
           Fn::GetAtt:
-          - LambdaExecutionRole
+          - DataSourceRole
           - Arn
         SharedLayerArn:
           Ref: SharedLayer
@@ -95,11 +101,11 @@ Resources:
   SourceApi2Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/e40bda725d4ac96e874901db5a090e27.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/eb8836330ef48813c70d5b49e7647b97.template
       Parameters:
-        LambdaExecutionRole:
+        DataSourceRole:
           Fn::GetAtt:
-          - LambdaExecutionRole
+          - DataSourceRole
           - Arn
         SharedLayerArn:
           Ref: SharedLayer
@@ -109,6 +115,8 @@ Resources:
           Fn::GetAtt:
           - MergedApi
           - Arn
+        NotificationsTopicArn:
+          Ref: NotificationsTopic
     Metadata:
       SamResourceId: SourceApi2Stack
   MergedApi:
@@ -123,7 +131,7 @@ Resources:
         - Arn
     Metadata:
       SamResourceId: MergedApi
-  MergedApi1ApiKey:
+  MergedApiKey:
     Type: AWS::AppSync::ApiKey
     Properties:
       ApiId:
@@ -132,17 +140,46 @@ Resources:
         - ApiId
       Description: API Key for the Demo API
     Metadata:
-      SamResourceId: MergedApi1ApiKey
+      SamResourceId: MergedApiKey
+  SNSNotificationsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/1a16d83962ebb445d61c720309d4bdcd.template
+      Parameters:
+        DataSourceRole:
+          Fn::GetAtt:
+          - DataSourceRole
+          - Arn
+        SharedLayerArn:
+          Ref: SharedLayer
+        MergedApiUrl:
+          Fn::GetAtt:
+          - MergedApi
+          - GraphQLUrl
+        MergedApiKey:
+          Fn::GetAtt:
+          - MergedApiKey
+          - ApiKey
+        NotificationsTopicArn:
+          Ref: NotificationsTopic
+    Metadata:
+      SamResourceId: SNSNotificationsStack
 Outputs:
-  MergedApi:
+  MergedApiUrl:
     Description: AppSync Merged API
     Value:
       Fn::GetAtt:
       - MergedApi
       - GraphQLUrl
-  MergedApi1ApiKey:
+  MergedApiKey:
     Description: API Key for authentication
     Value:
       Fn::GetAtt:
-      - MergedApi1ApiKey
+      - MergedApiKey
       - ApiKey
+  NotificationsTopicArn:
+    Description: ARN of the exported notifications SNS topic
+    Value:
+      Ref: NotificationsTopic
+    Export:
+      Name: NotificationsTopicArn

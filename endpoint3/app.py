@@ -14,5 +14,6 @@ def main(event):
 def lambda_handler(event, context):
     print("============ EVENT: ", event)
     response = main(event)
+    print("============ RESPONSE: ", response)
 
     return response

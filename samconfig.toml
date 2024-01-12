@@ -4,7 +4,7 @@ version = 0.1
 
 [default]
 [default.global.parameters]
-stack_name = "demo-1"
+stack_name = "aws-serverless-demo"
 
 [default.build.parameters]
 cached = true
@@ -17,7 +17,7 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
-s3_prefix = "demo-1"
+s3_prefix = "aws-serverless-demo"
 region = "us-east-1"
 profile = "admin@rr-ashurmatov-root"
 image_repositories = []

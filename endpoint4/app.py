@@ -1,14 +1,8 @@
-import utilities
-from database import connect_to_db
-
-
 def main(event):
-    utilities.init_db()
-    connect_to_db()
+    receiver_id = event.get("receiverId", None)
+    payload = event.get("payload", None)
 
-    message = event["data"]["message"]
-
-    return {"message": message, "success": True}
+    return {"receiverId": receiver_id, "payload": payload}
 
 
 def lambda_handler(event, context):
