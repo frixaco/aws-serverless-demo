@@ -68,12 +68,9 @@ Resources:
 
         export function request(ctx) {
           const {source, args} = ctx;
-          if (!args.data) {
-            util.error(`Missing required field data`, 'BadRequestException');
-          }
           return {
             operation: 'Invoke',
-            payload: { data: args.data },
+            payload: { ...args },
           };
         }
 

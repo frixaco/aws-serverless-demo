@@ -50,22 +50,22 @@ Resources:
       TopicArn: !Ref NotificationsTopicArn
       Endpoint: !GetAtt NotificationsFunction.Arn
 
-  Job1Function:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../job1/
-      Layers:
-        - !Ref SharedLayerArn
-      Events:
-        ProfileVerificationReminder:
-          Type: Schedule
-          Properties:
-            Schedule: rate(5 minutes)
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Action:
-                - "sns:Publish"
-                # TODO: Use actual ARN
-              Resource: "*"
+  # Job1Function:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: ../job1/
+  #     Layers:
+  #       - !Ref SharedLayerArn
+  #     Events:
+  #       ProfileVerificationReminder:
+  #         Type: Schedule
+  #         Properties:
+  #           Schedule: rate(5 minutes)
+  #     Policies:
+  #       - Version: "2012-10-17"
+  #         Statement:
+  #           - Effect: Allow
+  #             Action:
+  #               - "sns:Publish"
+  #               # TODO: Use actual ARN
+  #             Resource: "*"

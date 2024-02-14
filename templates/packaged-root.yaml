@@ -16,7 +16,7 @@ Resources:
     Properties:
       LayerName: shared-layer
       Description: Layer with dependencies and utilies
-      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/dc666ec6cd280fc69030cbde91b88802
+      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/77ac57793086373eb3b166ccbc348001
       CompatibleRuntimes:
       - python3.11
       RetentionPolicy: Delete
@@ -84,7 +84,7 @@ Resources:
   SourceApi1Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/d773275149507c9d718854d654736607.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/93ebde176038b3046b34ff04d94246e5.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
@@ -101,7 +101,7 @@ Resources:
   SourceApi2Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/eb8836330ef48813c70d5b49e7647b97.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/34ccfdb0bce80af19fe7f287eb920af8.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
@@ -144,7 +144,7 @@ Resources:
   SNSNotificationsStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/1a16d83962ebb445d61c720309d4bdcd.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/fada2b67226de556b9673b752eaec0a3.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:

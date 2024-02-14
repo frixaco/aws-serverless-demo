@@ -7,6 +7,7 @@ type Mutation {}
 
 type Query {
   endpoint1(data: Endpoint1Input!): Endpoint1Response!
+  @aws_auth(cognito_groups: ["users"])
 }
 
 input Endpoint1Input {
