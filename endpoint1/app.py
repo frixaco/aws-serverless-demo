@@ -1,3 +1,5 @@
+import json
+
 import utilities
 from database import connect_to_db
 
@@ -6,7 +8,9 @@ def main(event):
     utilities.init_db()
     connect_to_db()
 
-    message = event["data"]["message"]
+    payload = event["data"]["message"]
+
+    message = json.dumps(payload)
 
     return {"message": message, "success": True}
 

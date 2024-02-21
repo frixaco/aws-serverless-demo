@@ -84,7 +84,7 @@ Resources:
   SourceApi1Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/93ebde176038b3046b34ff04d94246e5.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/96419dddaead02db61a4664aefd9019d.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
