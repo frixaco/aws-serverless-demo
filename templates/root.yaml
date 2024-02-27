@@ -102,7 +102,13 @@ Resources:
     Properties:
       Name: demo-merged-api-1
       ApiType: MERGED
-      AuthenticationType: API_KEY
+      AuthenticationType: AMAZON_COGNITO_USER_POOLS
+      UserPoolConfig:
+        UserPoolId: us-east-1_fsGHzHDM7
+        AwsRegion: us-east-1
+        DefaultAction: ALLOW
+      AdditionalAuthenticationProviders:
+        - AuthenticationType: API_KEY
       MergedApiExecutionRoleArn: !GetAtt MergedApiRole.Arn
 
   MergedApiKey:

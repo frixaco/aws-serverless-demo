@@ -22,21 +22,25 @@ input NotificationInput {
 
 type Mutation {
   endpoint2(data: Endpoint2Input!): Endpoint2Response!
+  @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"])
   endpoint3(data: Endpoint3Input!): Endpoint3Response!
+  @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"])
   endpoint4(receiverId: String!, payload: NotificationInput): NotificationPayload
+  @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"])
 }
 
 type Subscription {
   endpoint4Channel(
     receiverId: String!
   ): NotificationPayload @aws_subscribe(mutations: ["endpoint4"])
+  @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"])
 }
 
 input Endpoint2Input {
   message: String!
 }
 
-type Endpoint2Response {
+type Endpoint2Response @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"]) {
   message: String!
   success: Boolean!
 }
@@ -45,7 +49,7 @@ input Endpoint3Input {
   message: String!
 }
 
-type Endpoint3Response {
+type Endpoint3Response @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"]) {
   message: String!
   success: Boolean!
 }

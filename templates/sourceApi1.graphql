@@ -5,25 +5,16 @@ schema {
 
 type Mutation {}
 
-input Endpoint1DataInput {
-  data: String!
-}
-
-input Endpoint1MessageInput {
-  message: String!
-}
-
 input Endpoint1Input {
-  data: Endpoint1DataInput
-  message: Endpoint1MessageInput
+  message: String!
 }
 
 type Query {
   endpoint1(data: Endpoint1Input!): Endpoint1Response!
-  @aws_auth(cognito_groups: ["users"])
+  @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"])
 }
 
-type Endpoint1Response {
+type Endpoint1Response @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"]) {
   message: String!
   success: Boolean!
 }

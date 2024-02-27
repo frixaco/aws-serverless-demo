@@ -16,7 +16,7 @@ Resources:
     Properties:
       LayerName: shared-layer
       Description: Layer with dependencies and utilies
-      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/77ac57793086373eb3b166ccbc348001
+      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/344fb8c5c03f44ad021a84607ca8314f
       CompatibleRuntimes:
       - python3.11
       RetentionPolicy: Delete
@@ -84,7 +84,7 @@ Resources:
   SourceApi1Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/96419dddaead02db61a4664aefd9019d.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/ee3da7f7675828c53c742d5fdf0faef5.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
@@ -101,7 +101,7 @@ Resources:
   SourceApi2Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/34ccfdb0bce80af19fe7f287eb920af8.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/43965ebeeedd6bc5f73c07c193058190.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
@@ -124,7 +124,13 @@ Resources:
     Properties:
       Name: demo-merged-api-1
       ApiType: MERGED
-      AuthenticationType: API_KEY
+      AuthenticationType: AMAZON_COGNITO_USER_POOLS
+      UserPoolConfig:
+        UserPoolId: us-east-1_fsGHzHDM7
+        AwsRegion: us-east-1
+        DefaultAction: ALLOW
+      AdditionalAuthenticationProviders:
+      - AuthenticationType: API_KEY
       MergedApiExecutionRoleArn:
         Fn::GetAtt:
         - MergedApiRole
@@ -144,7 +150,7 @@ Resources:
   SNSNotificationsStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/fada2b67226de556b9673b752eaec0a3.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/d103f4e6dae9e8ebf0da4b0ba08be2cd.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
