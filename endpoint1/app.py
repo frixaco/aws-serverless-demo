@@ -10,7 +10,7 @@ def main(event):
     if "data" in event:
         message = event["data"]["message"]
 
-    return {"message": message, "success": True}
+    return {"message": message, "success": True, "data": {"responseData": "aslkdj"}}
 
 
 def lambda_handler(event, context):
