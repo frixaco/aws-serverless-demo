@@ -36,7 +36,7 @@ Resources:
     Properties:
       CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/3d638b39c376b7a53f05b8f2fbf62ec5
       Handler: app.lambda_handler
-      Runtime: python3.11
+      Runtime: python3.12
       Layers:
       - Ref: SharedLayerArn
     Metadata:

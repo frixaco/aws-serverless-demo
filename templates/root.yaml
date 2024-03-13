@@ -9,7 +9,7 @@ Resources:
       Description: Layer with ffmpeg and ffprobe binaries
       ContentUri: "s3://frixaco-lambda-layers/ffmpeg_mediainfo_layer.zip"
       CompatibleRuntimes:
-        - python3.11
+        - python3.12
 
   SharedLayer:
     Type: AWS::Serverless::LayerVersion
@@ -18,10 +18,10 @@ Resources:
       Description: Layer with dependencies and utilies
       ContentUri: ../shared/
       CompatibleRuntimes:
-        - python3.11
+        - python3.12
       RetentionPolicy: Delete
     Metadata:
-      BuildMethod: python3.11
+      BuildMethod: python3.12
 
   NotificationsTopic:
     Type: "AWS::SNS::Topic"

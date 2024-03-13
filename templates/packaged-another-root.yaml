@@ -6,7 +6,7 @@ Resources:
     Properties:
       Handler: index.lambda_handler
       FunctionName: MyLambdaFunction
-      Runtime: python3.11
+      Runtime: python3.12
       CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/df3ffe0bcbd902c2be6d180f296f2bd9
       Environment:
         Variables:

@@ -39,7 +39,7 @@ Resources:
     Properties:
       CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/b0171a77f3a609819dba1b608f40d2cc
       Handler: app.lambda_handler
-      Runtime: python3.11
+      Runtime: python3.12
       Layers:
       - Ref: FfmpegLayerArn
       - Ref: SharedLayerArn
@@ -156,7 +156,7 @@ Resources:
     Properties:
       CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1gjbchdupvbac/f63e2de02f081e51c4795fdc8d749fac
       Handler: app.lambda_handler
-      Runtime: python3.11
+      Runtime: python3.12
       Layers:
       - Ref: SharedLayerArn
     Metadata:

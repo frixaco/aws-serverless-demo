@@ -1,5 +1,12 @@
-boto3
-requests
+boto3==1.34.47
+google-api-python-client==2.122.0
+app-store-server-library==1.0.0
+
+requests==2.31.0
+
+SQLAlchemy==2.0.27
+PyMySQL==1.1.0
+
 uuid6
 cfn-lint
 ruff

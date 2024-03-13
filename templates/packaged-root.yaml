@@ -8,7 +8,7 @@ Resources:
       Description: Layer with ffmpeg and ffprobe binaries
       ContentUri: s3://frixaco-lambda-layers/ffmpeg_mediainfo_layer.zip
       CompatibleRuntimes:
-      - python3.11
+      - python3.12
     Metadata:
       SamResourceId: FfmpegLayer
   SharedLayer:
@@ -16,12 +16,12 @@ Resources:
     Properties:
       LayerName: shared-layer
       Description: Layer with dependencies and utilies
-      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/344fb8c5c03f44ad021a84607ca8314f
+      ContentUri: s3://aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/8666830a304b7ce3514a5d18bd4b4a12
       CompatibleRuntimes:
-      - python3.11
+      - python3.12
       RetentionPolicy: Delete
     Metadata:
-      BuildMethod: python3.11
+      BuildMethod: python3.12
       SamResourceId: SharedLayer
   NotificationsTopic:
     Type: AWS::SNS::Topic
@@ -84,7 +84,7 @@ Resources:
   SourceApi1Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/9ed421d2b34ba69e11122ebfac8a6bca.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/a25bd43992e29eb7291841c4f0d5b2ef.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
@@ -101,7 +101,7 @@ Resources:
   SourceApi2Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/43965ebeeedd6bc5f73c07c193058190.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/4bd368f577d9b15394af90bf2ab0f5bd.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:
@@ -150,7 +150,7 @@ Resources:
   SNSNotificationsStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/d103f4e6dae9e8ebf0da4b0ba08be2cd.template
+      TemplateURL: https://s3.amazonaws.com/aws-sam-cli-managed-default-samclisourcebucket-8klpbcx2xhis/0e4402aa720f54020a73faa84671a40f.template
       Parameters:
         DataSourceRole:
           Fn::GetAtt:

@@ -1,17 +1,19 @@
 import utilities
-from database import connect_to_db
+from database import Session, get_users_from_db
 
 
 def main(event):
-    utilities.init_db()
-    connect_to_db()
+    session = Session()
 
-    message = event["data"]["message"]
+    utilities.init_db()
+    get_users_from_db(session)
+
+    message = event["identity"]["username"]
 
     return {"message": message, "success": True}
 
 
-def lambda_handler(event, context):
+def lambda_handler(event):
     print("============ EVENT: ", event)
     response = main(event)
     print("============ RESPONSE: ", response)

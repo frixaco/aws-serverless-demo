@@ -1,9 +1,12 @@
 schema {
   query: Query
   mutation: Mutation
+  subscription: Subscription
 }
 
 type Mutation {}
+
+type Subscription {}
 
 input Endpoint1Input {
   message: String!
@@ -11,7 +14,7 @@ input Endpoint1Input {
 
 type Query {
   endpoint1(data: Endpoint1Input!): Endpoint1Response!
-  @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"])
+   @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"])
 }
 
 type Endpoint1Response @aws_api_key @aws_cognito_user_pools(cognito_groups: ["users"]) {

@@ -7,7 +7,7 @@ Resources:
     Properties:
       Handler: index.lambda_handler
       FunctionName: MyLambdaFunction
-      Runtime: python3.11
+      Runtime: python3.12
       CodeUri: ../another_endpoint1/
       Environment:
         Variables:

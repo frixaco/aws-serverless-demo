@@ -20,7 +20,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: python3.11
+    Runtime: python3.12
     Timeout: 30
     Handler: app.lambda_handler
 
@@ -222,6 +222,11 @@ Resources:
       Name: demo-source-api-2
       ApiType: GRAPHQL
       AuthenticationType: API_KEY
+      AdditionalAuthenticationProviders:
+        - AuthenticationType: AMAZON_COGNITO_USER_POOLS
+          UserPoolConfig:
+            UserPoolId: us-east-1_fsGHzHDM7
+            AwsRegion: us-east-1
 
   SourceApi2Association:
     Type: AWS::AppSync::SourceApiAssociation
