@@ -1,0 +1,26 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Mutation {
+  _empty: String
+}
+
+input CurrentUserInput {
+  includeDebug: Boolean = false
+}
+
+type Query {
+  currentUser(input: CurrentUserInput): CurrentUserProfile!
+    @aws_api_key
+    @aws_cognito_user_pools(cognito_groups: ["users"])
+}
+
+type CurrentUserProfile
+  @aws_api_key
+  @aws_cognito_user_pools(cognito_groups: ["users"]) {
+  userId: String!
+  source: String!
+  debug: String
+}

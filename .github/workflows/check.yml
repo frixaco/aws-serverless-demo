@@ -1,0 +1,50 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      SAM_CLI_TELEMETRY: 0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.14
+
+      - name: Install dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Run Ruff
+        run: uv run ruff check .
+
+      - name: Run unit tests
+        run: uv run pytest tests/unit -q
+
+      - name: Run ty
+        run: uv run ty check .
+
+      - name: Run CloudFormation lint
+        run: uv run cfn-lint templates/*.yaml
+
+      - name: Set up AWS SAM CLI
+        uses: aws-actions/setup-sam@v3
+
+      - name: Validate SAM template
+        run: sam validate --template templates/root.yaml --region us-east-1

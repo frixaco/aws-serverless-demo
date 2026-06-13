@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  SharedLayerArn:
+    Type: String
+    Description: Shared Lambda layer ARN.
+  MergedApiUrl:
+    Type: String
+    Description: Merged AppSync API URL.
+  MergedApiKey:
+    Type: String
+    Description: API key for the merged AppSync API.
+  NotificationsTopicArn:
+    Type: String
+    Description: SNS topic that receives notification events.
+
+Globals:
+  Function:
+    Runtime: python3.14
+    Timeout: 10
+    Handler: app.lambda_handler
+
+Resources:
+  NotificationDispatcherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../notification_dispatcher/
+      Layers:
+        - !Ref SharedLayerArn
+      Environment:
+        Variables:
+          GRAPHQL_API_URL: !Ref MergedApiUrl
+          GRAPHQL_API_KEY: !Ref MergedApiKey
+
+  NotificationDispatcherInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt NotificationDispatcherFunction.Arn
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref NotificationsTopicArn
+
+  NotificationDispatcherSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      TopicArn: !Ref NotificationsTopicArn
+      Endpoint: !GetAtt NotificationDispatcherFunction.Arn

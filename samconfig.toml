@@ -14,12 +14,11 @@ parallel = true
 lint = true
 
 [default.deploy.parameters]
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
 confirm_changeset = true
 resolve_s3 = true
 s3_prefix = "aws-serverless-demo"
 region = "us-east-1"
-profile = "admin@rr-ashurmatov-root"
 image_repositories = []
 
 [default.package.parameters]

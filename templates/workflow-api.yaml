@@ -1,0 +1,154 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  DataSourceRoleArn:
+    Type: String
+    Description: IAM role AppSync uses to invoke Lambda data sources.
+  SharedLayerArn:
+    Type: String
+    Description: Shared Lambda layer ARN.
+  MergedApiArn:
+    Type: String
+    Description: Merged AppSync API ARN.
+  CognitoUserPoolId:
+    Type: String
+    Description: Cognito User Pool ID used by the demo APIs.
+  NotificationsTopicArn:
+    Type: String
+    Description: SNS topic used to fan out notification events.
+
+Globals:
+  Function:
+    Runtime: python3.14
+    Timeout: 10
+    Handler: app.lambda_handler
+
+Resources:
+  WorkflowSourceApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: !Sub "${AWS::StackName}-workflow-source"
+      ApiType: GRAPHQL
+      AuthenticationType: API_KEY
+      AdditionalAuthenticationProviders:
+        - AuthenticationType: AMAZON_COGNITO_USER_POOLS
+          UserPoolConfig:
+            UserPoolId: !Ref CognitoUserPoolId
+            AwsRegion: !Ref AWS::Region
+
+  WorkflowSourceApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId: !GetAtt WorkflowSourceApi.ApiId
+      Description: API key for local demo calls.
+
+  WorkflowSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt WorkflowSourceApi.ApiId
+      DefinitionS3Location: ./workflow-api.graphql
+
+  ActivityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../create_activity/
+      Layers:
+        - !Ref SharedLayerArn
+      Environment:
+        Variables:
+          SNS_NOTIFICATION_TOPIC_ARN: !Ref NotificationsTopicArn
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref NotificationsTopicArn
+
+  ActivityDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt WorkflowSourceApi.ApiId
+      Name: ActivityDataSource
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt ActivityFunction.Arn
+      ServiceRoleArn: !Ref DataSourceRoleArn
+
+  ActivityResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt WorkflowSourceApi.ApiId
+      TypeName: Mutation
+      FieldName: createActivity
+      DataSourceName: !GetAtt ActivityDataSource.Name
+      Code: |
+        import { util } from '@aws-appsync/utils';
+
+        export function request(ctx) {
+          if (!ctx.args.input) {
+            util.error('Missing required input', 'BadRequestException');
+          }
+          return {
+            operation: 'Invoke',
+            payload: {
+              arguments: ctx.args,
+              identity: ctx.identity,
+            },
+          };
+        }
+
+        export function response(ctx) {
+          const { error, result } = ctx;
+          if (error) {
+            util.appendError(error.message, error.type, result);
+          }
+          return result;
+        }
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+
+  NotificationDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt WorkflowSourceApi.ApiId
+      Name: NotificationDataSource
+      Type: NONE
+
+  PublishNotificationResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      ApiId: !GetAtt WorkflowSourceApi.ApiId
+      TypeName: Mutation
+      FieldName: publishNotification
+      DataSourceName: !GetAtt NotificationDataSource.Name
+      Code: |
+        import { util } from '@aws-appsync/utils';
+
+        export function request(ctx) {
+          return { payload: ctx.args };
+        }
+
+        export function response(ctx) {
+          return ctx.result;
+        }
+      Runtime:
+        Name: APPSYNC_JS
+        RuntimeVersion: 1.0.0
+
+  WorkflowSourceAssociation:
+    Type: AWS::AppSync::SourceApiAssociation
+    DependsOn:
+      - WorkflowSchema
+    Properties:
+      MergedApiIdentifier: !Ref MergedApiArn
+      SourceApiIdentifier: !GetAtt WorkflowSourceApi.Arn
+      SourceApiAssociationConfig:
+        MergeType: AUTO_MERGE
+
+Outputs:
+  WorkflowSourceApiArn:
+    Description: Workflow source GraphQL API ARN.
+    Value: !GetAtt WorkflowSourceApi.Arn

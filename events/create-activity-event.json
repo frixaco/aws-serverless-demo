@@ -1,0 +1,12 @@
+{
+  "arguments": {
+    "input": {
+      "message": "New booking request",
+      "receiverId": "demo-user-2"
+    }
+  },
+  "identity": {
+    "sub": "demo-user-1",
+    "username": "demo@example.com"
+  }
+}

@@ -1,0 +1,62 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Query {
+  _empty: String
+}
+
+input ActivityInput {
+  message: String!
+  receiverId: String!
+}
+
+type ActivityResponse
+  @aws_api_key
+  @aws_cognito_user_pools(cognito_groups: ["users"]) {
+  activityId: String!
+  message: String!
+  receiverId: String!
+  notified: Boolean!
+}
+
+input NotificationInput {
+  activityId: String!
+  message: String!
+}
+
+type Notification
+  @aws_api_key
+  @aws_cognito_user_pools(cognito_groups: ["users"]) {
+  activityId: String!
+  message: String!
+}
+
+type NotificationPayload
+  @aws_api_key
+  @aws_cognito_user_pools(cognito_groups: ["users"]) {
+  receiverId: String!
+  payload: Notification!
+}
+
+type Mutation {
+  createActivity(input: ActivityInput!): ActivityResponse!
+    @aws_api_key
+    @aws_cognito_user_pools(cognito_groups: ["users"])
+
+  publishNotification(
+    receiverId: String!
+    payload: NotificationInput!
+  ): NotificationPayload!
+    @aws_api_key
+    @aws_cognito_user_pools(cognito_groups: ["users"])
+}
+
+type Subscription {
+  onNotification(receiverId: String!): NotificationPayload
+    @aws_subscribe(mutations: ["publishNotification"])
+    @aws_api_key
+    @aws_cognito_user_pools(cognito_groups: ["users"])
+}

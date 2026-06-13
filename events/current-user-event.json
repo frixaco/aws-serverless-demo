@@ -1,0 +1,11 @@
+{
+  "arguments": {
+    "input": {
+      "includeDebug": true
+    }
+  },
+  "identity": {
+    "sub": "demo-user-1",
+    "username": "demo@example.com"
+  }
+}

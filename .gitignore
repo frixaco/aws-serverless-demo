@@ -1,4 +1,5 @@
 .aws-sam
+templates/packaged-*.yaml
 
 node_modules/
 

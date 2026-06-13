@@ -1,128 +1,128 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
-Resources:
-  FfmpegLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: ffmpeg-layer
-      Description: Layer with ffmpeg and ffprobe binaries
-      ContentUri: "s3://frixaco-lambda-layers/ffmpeg_mediainfo_layer.zip"
-      CompatibleRuntimes:
-        - python3.11
+Parameters:
+  ProjectName:
+    Type: String
+    Default: aws-serverless-demo
+    Description: Prefix used for demo resource names.
+  CognitoUserPoolId:
+    Type: String
+    Description: Cognito User Pool ID used by AppSync Cognito auth.
 
+Resources:
   SharedLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: shared-layer
-      Description: Layer with dependencies and utilies
+      LayerName: !Sub "${ProjectName}-shared"
+      Description: Shared Python helpers used by demo Lambdas.
       ContentUri: ../shared/
       CompatibleRuntimes:
-        - python3.11
+        - python3.14
       RetentionPolicy: Delete
     Metadata:
-      BuildMethod: python3.11
+      BuildMethod: python3.14
 
   NotificationsTopic:
-    Type: "AWS::SNS::Topic"
+    Type: AWS::SNS::Topic
     Properties:
-      DisplayName: "test-realtime-notifications"
+      DisplayName: !Sub "${ProjectName}-notifications"
 
-  DataSourceRole:
+  AppSyncLambdaInvokeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: "Allow"
+          - Effect: Allow
             Principal:
               Service:
-                - "appsync.amazonaws.com"
+                - appsync.amazonaws.com
             Action:
-              - "sts:AssumeRole"
+              - sts:AssumeRole
       Policies:
-        - PolicyName: "InvokeLambdaFunction"
+        - PolicyName: InvokeDemoLambdaDataSources
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Effect: "Allow"
+              - Effect: Allow
                 Action:
-                  - "lambda:invokeFunction"
+                  - lambda:InvokeFunction
                 Resource: "*"
 
-  MergedApiRole:
+  MergedApiExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: "Allow"
+          - Effect: Allow
             Principal:
               Service:
-                - "appsync.amazonaws.com"
+                - appsync.amazonaws.com
             Action:
-              - "sts:AssumeRole"
+              - sts:AssumeRole
 
-  MergedApiRolePolicy:
+  MergedApiExecutionPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: MergedApiRolePolicy
+      PolicyName: MergedApiExecutionPolicy
       Roles:
-        - !Ref MergedApiRole
+        - !Ref MergedApiExecutionRole
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: "Allow"
+          - Effect: Allow
             Action:
-              - "appsync:*"
+              - appsync:SourceGraphQL
             Resource: "*"
-
-  SourceApi1Stack:
-    Type: "AWS::CloudFormation::Stack"
-    Properties:
-      TemplateURL: ./child1.yaml
-      Parameters:
-        DataSourceRole: !GetAtt DataSourceRole.Arn
-        SharedLayerArn: !Ref SharedLayer
-        MergedApiArn: !GetAtt MergedApi.Arn
-
-  SourceApi2Stack:
-    Type: "AWS::CloudFormation::Stack"
-    Properties:
-      TemplateURL: ./child2.yaml
-      Parameters:
-        DataSourceRole: !GetAtt DataSourceRole.Arn
-        SharedLayerArn: !Ref SharedLayer
-        FfmpegLayerArn: !Ref FfmpegLayer
-        MergedApiArn: !GetAtt MergedApi.Arn
-        NotificationsTopicArn: !Ref NotificationsTopic
 
   MergedApi:
     Type: AWS::AppSync::GraphQLApi
     Properties:
-      Name: demo-merged-api-1
+      Name: !Sub "${ProjectName}-merged"
       ApiType: MERGED
       AuthenticationType: AMAZON_COGNITO_USER_POOLS
       UserPoolConfig:
-        UserPoolId: us-east-1_fsGHzHDM7
-        AwsRegion: us-east-1
+        UserPoolId: !Ref CognitoUserPoolId
+        AwsRegion: !Ref AWS::Region
         DefaultAction: ALLOW
       AdditionalAuthenticationProviders:
         - AuthenticationType: API_KEY
-      MergedApiExecutionRoleArn: !GetAtt MergedApiRole.Arn
+      MergedApiExecutionRoleArn: !GetAtt MergedApiExecutionRole.Arn
 
   MergedApiKey:
     Type: AWS::AppSync::ApiKey
     Properties:
       ApiId: !GetAtt MergedApi.ApiId
-      Description: "API Key for the Demo API"
+      Description: API key for local demo calls.
 
-  SNSNotificationsStack:
-    Type: "AWS::CloudFormation::Stack"
+  UserApiStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./child3.yaml
+      TemplateURL: ./user-api.yaml
       Parameters:
-        DataSourceRole: !GetAtt DataSourceRole.Arn
+        DataSourceRoleArn: !GetAtt AppSyncLambdaInvokeRole.Arn
+        SharedLayerArn: !Ref SharedLayer
+        MergedApiArn: !GetAtt MergedApi.Arn
+        CognitoUserPoolId: !Ref CognitoUserPoolId
+
+  WorkflowApiStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./workflow-api.yaml
+      Parameters:
+        DataSourceRoleArn: !GetAtt AppSyncLambdaInvokeRole.Arn
+        SharedLayerArn: !Ref SharedLayer
+        MergedApiArn: !GetAtt MergedApi.Arn
+        CognitoUserPoolId: !Ref CognitoUserPoolId
+        NotificationsTopicArn: !Ref NotificationsTopic
+
+  NotificationDispatcherStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./notification-dispatcher.yaml
+      Parameters:
         SharedLayerArn: !Ref SharedLayer
         MergedApiUrl: !GetAtt MergedApi.GraphQLUrl
         MergedApiKey: !GetAtt MergedApiKey.ApiKey
@@ -130,13 +130,11 @@ Resources:
 
 Outputs:
   MergedApiUrl:
-    Description: AppSync Merged API
+    Description: Client-facing merged AppSync API URL.
     Value: !GetAtt MergedApi.GraphQLUrl
   MergedApiKey:
-    Description: API Key for authentication
+    Description: API key for local demo calls.
     Value: !GetAtt MergedApiKey.ApiKey
   NotificationsTopicArn:
-    Description: ARN of the exported notifications SNS topic
+    Description: SNS topic that starts the notification fanout path.
     Value: !Ref NotificationsTopic
-    Export:
-      Name: NotificationsTopicArn
